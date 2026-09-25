@@ -13,12 +13,12 @@ jobs:
   build:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - name: Check core behavior
         run: bash scripts/test.sh
       - name: Build universal app
         run: bash scripts/package.sh --universal
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: StayAwake-macOS-universal
           path: |
