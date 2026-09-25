@@ -1,115 +1,116 @@
 <p align="center">
-  <img src="docs/AppIcon.png" width="120" alt="醒着的咖啡杯图标" />
+  <img src="docs/AppIcon.png" width="96" height="96" alt="StayAwake coffee cup icon" />
 </p>
 
-<h1 align="center">醒着 · StayAwake</h1>
-<p align="center">给 Mac 续一杯。轻巧、原生、中文的菜单栏防休眠工具。</p>
+<h1 align="center">StayAwake · 醒着</h1>
 
-<p align="center">macOS 14+ · Swift / SwiftUI · Apple Silicon & Intel · MIT</p>
+<p align="center">Keep your Mac awake. Let your display rest.</p>
 
-## 功能
+<p align="center">
+  <a href="https://github.com/NginxL/StayAwake/releases/latest"><img src="https://img.shields.io/github/v/release/NginxL/StayAwake?color=187c68" alt="Latest release" /></a>
+  <a href="https://github.com/NginxL/StayAwake/actions/workflows/build.yml"><img src="https://github.com/NginxL/StayAwake/actions/workflows/build.yml/badge.svg" alt="Build status" /></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-555555" alt="Requires macOS 14 or later" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license" /></a>
+</p>
 
-- **随手开关**：左键点菜单栏咖啡杯打开面板；右键直接开启 / 暂停。
-- **按需计时**：无限、15 / 30 / 45 分钟、1 / 4 / 8 小时，或自定义 1–1440 分钟。
-- **清楚可见**：面板倒计时、剩余时间进度条，可选菜单栏倒计时。
-- **屏幕独立控制**：保持 Mac 运行的同时，自行决定屏幕是否常亮。
-- **登录启动**：可选随登录打开；防休眠默认关闭，需要手动开启。
+<p align="center">
+  <strong>English</strong> · <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-关闭、到期或退出后，释放本应用的防休眠请求。防休眠功能离线工作，没有统计上报或第三方依赖。
-只有手动检查 / 下载更新、打开源码链接时才访问 GitHub。
+<p align="center">
+  <a href="https://github.com/NginxL/StayAwake/releases/latest"><strong>Download for macOS</strong></a> ·
+  <a href="#installation">Installation</a> ·
+  <a href="https://github.com/NginxL/StayAwake/issues">Report an issue</a>
+</p>
 
-## 安装与更新
+StayAwake is a native macOS menu bar app for preventing idle sleep during downloads, builds, presentations, and other long-running tasks. Choose a duration, turn it on, and control display sleep separately. Built with Swift and SwiftUI, it uses the system's `caffeinate` utility and has no third-party runtime dependencies.
 
-从 [Releases](https://github.com/NginxL/StayAwake/releases/latest) 下载 `StayAwake-版本-universal.zip`，
-解压后把 `StayAwake.app` 放到 `/Applications` 或 `~/Applications`。应用同时提供菜单栏入口和 Dock 图标，
-可在 Dock 图标上右键选择「选项 → 在程序坞中保留」。
+**Compatibility:** macOS 14 or later · Apple Silicon and Intel in one universal app. The app interface is currently **Simplified Chinese**; documentation is available in English and Chinese.
 
-在面板的「设置 → 版本更新」中点击 **检查更新**；发现新版本后点击 **下载并安装**。
-该操作会结束当前防休眠会话、替换应用并重新打开。重新打开后默认不启用防休眠。
+## Screenshots
 
-更新只接受此仓库正式 Release 的通用安装包，检查 SHA-256、应用标识、版本号和代码签名完整性。
-SHA-256 校验用于检测损坏，**不等同于 Apple Developer ID 签名或公证**。
-更新只在你点击时执行；权限不足、网络错误或校验失败时保留已安装版本。
-替换目录失败时恢复旧版本，上一版本保留在应用所在目录的 `.StayAwake-previous.app`，可手动恢复。
+<table>
+  <tr>
+    <th align="center">A timer you can see</th>
+    <th align="center">Preferences and updates</th>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><a href="docs/images/session.png"><img src="docs/images/session.png" width="360" alt="StayAwake running a 30-minute session, with a countdown, progress bar, duration presets, and display sleep control" /></a></td>
+    <td align="center" valign="top"><a href="docs/images/settings.png"><img src="docs/images/settings.png" width="360" alt="StayAwake settings with menu bar countdown, launch at login, and a manual update check showing version 1.0.0 is current" /></a></td>
+  </tr>
+  <tr>
+    <td valign="top">A 30-minute session with remaining time and progress. <strong>保持屏幕常亮</strong> controls whether the display stays on; the Mac can stay awake with it off.</td>
+    <td valign="top"><strong>设置</strong> reveals menu bar countdown, launch-at-login preferences, and <strong>检查更新</strong> (Check for Updates). Shown here with an indefinite session.</td>
+  </tr>
+</table>
 
-## 本地构建与使用
+<p align="center"><sub>Actual screenshots of StayAwake v1.0.0. Click an image to view it at full size.</sub></p>
 
-要求 macOS 14 或更新版本、Swift 5.9+。安装 Apple Command Line Tools 即可，不需要完整 Xcode：
+## Features
+
+| Feature | What it does |
+| --- | --- |
+| Quick access | Open the panel from the menu bar or Dock. Right-click the menu bar icon to toggle a session. |
+| Flexible duration | Stay awake indefinitely, use 15 / 30 / 45-minute or 1 / 4 / 8-hour presets, or enter 1–1440 minutes. |
+| Visible progress | See the countdown and progress in the panel, with an optional countdown in the menu bar. |
+| Independent display control | Keep the system awake while allowing the display to sleep, or keep both awake. |
+| Optional launch at login | Open the app when you sign in. Sleep prevention stays off until you turn it on. |
+
+## Installation
+
+1. Download `StayAwake-<version>-universal.zip` from the [latest release](https://github.com/NginxL/StayAwake/releases/latest).
+2. Unzip it and move `StayAwake.app` into `/Applications` or `~/Applications`.
+3. Open the app. Use its coffee cup icon in the menu bar, or click **醒着** in the Dock.
+
+To keep the Dock shortcut, right-click its icon and choose **Options → Keep in Dock**. Keep the application filename `StayAwake.app` for in-app updates.
+
+> **Signing status:** Current releases use ad-hoc signing and are not Apple Developer ID signed or notarized. macOS may block a downloaded copy. You can [build from source](docs/DEVELOPMENT.md#requirements-and-local-build) locally; the build scripts do not change Gatekeeper settings.
+
+## Usage
+
+Select a duration, then turn on the switch in the top-right corner. Choose **∞ / 不限** for an indefinite session; **自定义** opens the custom-duration field. Turn the switch off to end the session early.
+
+| Action | Behavior |
+| --- | --- |
+| Change the duration while active | Start a new countdown from the current time. |
+| Toggle **保持屏幕常亮** (Keep Display Awake) | Change display behavior without resetting the session deadline. |
+| Reach the deadline, switch off, or quit | Release StayAwake's sleep-prevention requests. |
+| Wake the Mac after the deadline | End the expired session; do not extend it automatically. |
+
+## Updates
+
+Open **设置 → 检查更新** (Settings → Check for Updates). If a newer release is available, choose **下载并安装** (Download and Install). Checks and installation are manual; the app does not silently upgrade itself.
+
+The updater downloads the universal app from this repository's GitHub Releases, verifies its SHA-256 checksum, bundle identifier, version, and code-signature integrity, then replaces and reopens the app. **Updating ends the current session; sleep prevention is off after relaunch.** The app must be in a writable `/Applications` or `~/Applications` folder.
+
+The previous version is kept beside the app as `.StayAwake-previous.app` for manual recovery. The updater does not monitor the new app for crashes. Checksum and ad-hoc signature checks detect integrity problems; they do not authenticate a developer's identity. See [update internals](docs/DEVELOPMENT.md#update-implementation) for details.
+
+## Privacy and sleep behavior
+
+**Does it need a network connection?** Sleep prevention works offline, with no analytics. The app contacts GitHub when you manually check for or download an update; the source-code link opens GitHub in your browser.
+
+**Why can my Mac still lock?** Locking the screen and putting the system to sleep are different. With **Keep Display Awake** off, the display may turn off while the Mac keeps running. StayAwake does not disable the screen saver, automatic locking, or password requirements. Even with the display kept awake, it is not a “prevent lock” utility.
+
+**Will it work with the lid closed?** StayAwake prevents *idle* sleep. It does not guarantee closed-lid operation or override an explicit Sleep command. Those behaviors remain under macOS control.
+
+**Does it change system power settings?** No. It creates temporary `caffeinate` requests instead of modifying `pmset` settings. Turning it off releases only its own requests; another app may still be keeping your Mac awake. Keeping the display on uses more power.
+
+## Development and contributing
+
+Build locally with macOS 14+ and Apple Command Line Tools providing Swift 5.9 or later:
 
 ```bash
-xcode-select --install  # 已安装时跳过
 git clone https://github.com/NginxL/StayAwake.git
 cd StayAwake
 bash scripts/build.sh
 ```
 
-生成的应用在 `dist/StayAwake.app`。在 Finder 中打开即可使用；日常使用可将它拖入「应用程序」。
-设置登录启动前，建议先将应用放在固定位置。
+The app is created at `dist/StayAwake.app`. See the [development guide](docs/DEVELOPMENT.md) for tests, architecture, universal packaging, and releases.
 
-```bash
-# 运行核心逻辑测试；不依赖 XCTest 或完整 Xcode
-bash scripts/test.sh
+Bug reports and pull requests are welcome. For a bug report, include the app version, macOS version, Mac architecture, steps to reproduce, and expected versus actual behavior. Remove personal information from logs or screenshots. Keep documentation changes consistent between English and Chinese.
 
-# 在本机短暂创建防休眠请求，验证超时、屏幕开关和强制退出后的释放
-bash scripts/test.sh --integration
+## Acknowledgments and license
 
-# 同时编译 Apple Silicon 和 Intel，合成为通用应用并打包
-bash scripts/package.sh --universal
-```
+Inspired by [KeepingYouAwake](https://github.com/newmarcel/KeepingYouAwake). StayAwake independently implements its code, interface, and icon using the same built-in macOS `caffeinate` utility. See [NOTICE.md](NOTICE.md) for attribution.
 
-构建产物使用本地 ad-hoc 签名，**没有 Apple Developer ID 签名或公证**。
-从网上下载的二进制文件可能被 Gatekeeper 拦截；可在自己机器上从源码构建。
-脚本不会关闭 Gatekeeper，也不会修改系统安全设置。
-
-## 使用说明
-
-| 操作 | 结果 |
-| --- | --- |
-| 选择时长，再打开主开关 | 从当前时间开始防休眠 |
-| 正在运行时更改时长 | 从当前时间按新时长重新计时 |
-| 正在运行时切换屏幕常亮 | 保留原来的结束时间 |
-| 关闭主开关或退出应用 | 释放本应用的防休眠请求 |
-| 合盖后重新打开电脑 | 检查截止时间；已到期的会话结束，不自动续期 |
-
-如果 KeepingYouAwake 或其他应用也在阻止休眠，关闭醒着只会释放醒着自己的请求。
-
-## 工作原理与边界
-
-使用 macOS 自带的 `/usr/bin/caffeinate`：
-
-- `-i` 阻止系统因空闲而休眠。
-- 可选 `-d` 阻止显示器因空闲而关闭。
-- 定时会话使用 `-t`；应用同时跟踪截止时间并在唤醒时校正显示。
-- `-w <应用 PID>` 让 macOS 在应用进程退出后释放请求，包含强制退出的情况。
-
-应用不会修改 `pmset` 系统设置，不需要管理员权限。它不会保证合盖运行，也不会阻止你主动选择「睡眠」。
-屏幕常亮会增加耗电；用于下载、编译等任务时，可以只保持系统运行。
-
-## 项目结构
-
-```text
-Sources/AwakeCore/   会话状态、截止时间、caffeinate 进程管理
-Sources/StayAwake/   SwiftUI 面板、菜单栏入口、偏好与登录启动
-Tests/              可注入时钟 / 进程替身的核心逻辑测试
-Resources/          应用元数据
-scripts/            构建、打包、测试与原创图标生成
-```
-
-GitHub Actions 在推送与 Pull Request 时执行测试并构建通用应用，产物位于对应运行的 Artifacts。
-本地打包输出包含 `.zip` 和 SHA-256 校验文件。
-
-## 致谢与许可
-
-功能理念参考 [KeepingYouAwake](https://github.com/newmarcel/KeepingYouAwake)，
-采用同样的系统 `caffeinate` 能力。代码、面板和图标独立实现，详情见 [NOTICE.md](NOTICE.md)。
-
-[MIT License](LICENSE)。
-
-## 维护与发布新版本
-
-1. 修改代码，并同步更新 `Resources/Info.plist` 的版本号与构建号。
-2. 执行 `bash scripts/test.sh --integration` 与 `bash scripts/package.sh --universal`。
-3. 提交到 `main`，再推送匹配版本号的标签，例如 `v1.0.1`。
-
-`Publish Release` 工作流会核对版本、构建通用包并上传 ZIP 和 SHA-256 校验文件。
-本地应用的「检查更新」读取正式 Release，**仅推送源码不会触发客户端升级**。
+Released under the [MIT License](LICENSE).
