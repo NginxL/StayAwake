@@ -1,0 +1,37 @@
+name: Publish Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, for example v1.0.1 (must match Info.plist)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - name: Check version and run tests
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
+          test "$RELEASE_TAG" = "v$version"
+          bash scripts/test.sh
+      - name: Build universal app
+        run: bash scripts/package.sh --universal
+      - name: Publish versioned assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" dist/*.zip dist/*.sha256 --verify-tag \
+            --title "StayAwake $RELEASE_TAG" --generate-notes
