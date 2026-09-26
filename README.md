@@ -109,8 +109,6 @@ The app is created at `dist/StayAwake.app`. See the [development guide](docs/DEV
 
 Bug reports and pull requests are welcome. For a bug report, include the app version, macOS version, Mac architecture, steps to reproduce, and expected versus actual behavior. Remove personal information from logs or screenshots. Keep documentation changes consistent between English and Chinese.
 
-## Acknowledgments and license
-
-Inspired by [KeepingYouAwake](https://github.com/newmarcel/KeepingYouAwake). StayAwake independently implements its code, interface, and icon using the same built-in macOS `caffeinate` utility. See [NOTICE.md](NOTICE.md) for attribution.
+## License
 
 Released under the [MIT License](LICENSE).

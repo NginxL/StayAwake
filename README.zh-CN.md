@@ -109,8 +109,6 @@ bash scripts/build.sh
 
 欢迎提交 Issue 和 Pull Request。报告问题时，请附上应用版本、macOS 版本、Mac 架构、复现步骤、预期行为与实际结果，并移除日志或截图中的个人信息。修改文档时，请保持中英文内容一致。
 
-## 致谢与许可
+## 许可证
 
-功能理念参考 [KeepingYouAwake](https://github.com/newmarcel/KeepingYouAwake)。醒着的代码、界面与图标均独立实现，使用相同的 macOS 内置 `caffeinate` 能力。来源说明见 [NOTICE.md](NOTICE.md)。
-
-项目采用 [MIT License](LICENSE)。
+项目采用 [MIT 许可证](LICENSE)。
