@@ -51,7 +51,9 @@ struct SessionControllerTests {
         tests.testMenuBarAnchorKeepsNativeButtonOnItsOwnDisplay()
         tests.testDockAnchorStaysWithinTheSelectedDisplay()
         tests.testMenuBarAnchorHandlesMissingDisplays()
-        var scenarioCount = 18
+        tests.testPanelFrameFitsTheClickedDisplay()
+        tests.testPanelFrameKeepsItsTopWhenContentExpands()
+        var scenarioCount = 20
         if CommandLine.arguments.contains("--integration") {
             try tests.testRealSystemAssertionsAndTimeout()
             try tests.testForcedOwnerExitReleasesAssertions()
@@ -258,7 +260,6 @@ struct SessionControllerTests {
         let location = CGPoint(x: 3900, y: 1425)
         let anchor = MenuBarAnchor.resolve(mouseLocation: location, buttonFrame: button, screens: screens)!
         expectEqual(anchor.screenIndex, 1)
-        expectFalse(anchor.usesStatusButton)
         expectEqual(anchor.rect.midX, location.x)
         expectEqual(anchor.rect.maxY, screens[1].maxY)
         expectTrue(screens[1].contains(anchor.rect))
@@ -286,7 +287,6 @@ struct SessionControllerTests {
         let anchor = MenuBarAnchor.resolve(mouseLocation: CGPoint(x: -480, y: 1428),
                                            buttonFrame: button, screens: [primary, external])!
         expectEqual(anchor.screenIndex, 1)
-        expectTrue(anchor.usesStatusButton)
         expectEqual(anchor.rect, button)
     }
 
@@ -312,8 +312,33 @@ struct SessionControllerTests {
         let anchor = MenuBarAnchor.resolve(mouseLocation: absentLocation, buttonFrame: button,
                                            screens: [screen])!
         expectEqual(anchor.rect, button)
-        expectTrue(anchor.usesStatusButton)
         expectNil(MenuBarAnchor.resolve(mouseLocation: absentLocation, buttonFrame: button, screens: []))
+    }
+
+    func testPanelFrameFitsTheClickedDisplay() {
+        let primary = CGRect(x: 0, y: 0, width: 1728, height: 1117)
+        let external = CGRect(x: -2560, y: 400, width: 2560, height: 1440)
+        let button = CGRect(x: 1300, y: 1080, width: 36, height: 37)
+        let visible = CGRect(x: -2480, y: 400, width: 2480, height: 1416)
+        for x in [external.minX + 1, external.midX, external.maxX - 1] {
+            let anchor = MenuBarAnchor.resolve(mouseLocation: CGPoint(x: x, y: external.maxY - 10),
+                                               buttonFrame: button, screens: [primary, external])!
+            let frame = anchor.panelFrame(contentSize: CGSize(width: 380, height: 700), visibleFrame: visible)
+            expectTrue(visible.contains(frame))
+            expectEqual(frame.size, CGSize(width: 380, height: 700))
+        }
+    }
+
+    func testPanelFrameKeepsItsTopWhenContentExpands() {
+        let screen = CGRect(x: 0, y: 0, width: 1728, height: 1117)
+        let button = CGRect(x: 1300, y: 1080, width: 36, height: 37)
+        let anchor = MenuBarAnchor.resolve(mouseLocation: CGPoint(x: 1318, y: 1100),
+                                           buttonFrame: button, screens: [screen])!
+        let short = anchor.panelFrame(contentSize: CGSize(width: 380, height: 460), visibleFrame: screen)
+        let expanded = anchor.panelFrame(contentSize: CGSize(width: 380, height: 800), visibleFrame: screen)
+        expectEqual(short.maxY, expanded.maxY)
+        expectEqual(short.midX, expanded.midX)
+        expectTrue(screen.contains(expanded))
     }
 
     private func eventually(_ condition: () throws -> Bool) rethrows -> Bool {

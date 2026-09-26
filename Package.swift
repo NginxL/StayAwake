@@ -7,7 +7,9 @@ let package = Package(
     products: [.executable(name: "StayAwake", targets: ["StayAwake"])],
     targets: [
         .target(name: "AwakeCore"),
-        .executableTarget(name: "StayAwake", dependencies: ["AwakeCore"]),
-        .executableTarget(name: "AwakeChecks", dependencies: ["AwakeCore"], path: "Tests/AwakeCoreTests")
+        .target(name: "AwakeUI", dependencies: ["AwakeCore"]),
+        .executableTarget(name: "StayAwake", dependencies: ["AwakeCore", "AwakeUI"]),
+        .executableTarget(name: "AwakeChecks", dependencies: ["AwakeCore"], path: "Tests/AwakeCoreTests"),
+        .executableTarget(name: "PanelChecks", dependencies: ["AwakeUI"], path: "Tests/AwakeUITests")
     ]
 )

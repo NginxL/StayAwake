@@ -1,5 +1,5 @@
 import AppKit
-import AwakeCore
+import AwakeUI
 import Combine
 import SwiftUI
 
@@ -11,14 +11,11 @@ struct StayAwakeApp: App {
 }
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate {
     private let model = AppModel()
     private var statusItem: NSStatusItem?
-    private let popover = NSPopover()
-    private var anchorWindow: NSWindow?
-    private var presentedScreen: NSRect?
+    private var panel: MenuBarPanelController?
     private var changes: AnyCancellable?
-    private var screenChanges: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.setActivationPolicy(.regular)
@@ -28,20 +25,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         item.button?.action = #selector(togglePanel)
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
 
-        popover.behavior = .transient
-        // Re-anchoring on another display must not race an old close animation.
-        popover.animates = false
-        popover.delegate = self
-        let content = NSHostingController(rootView: PanelView(model: model))
-        content.sizingOptions = [.preferredContentSize]
-        popover.contentViewController = content
-        popover.contentSize = content.view.fittingSize
+        panel = MenuBarPanelController(rootView: PanelView(model: model))
         changes = model.objectWillChange
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.updateStatusItem() }
         updateStatusItem()
-        screenChanges = NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
-            .sink { [weak self] _ in self?.popover.close() }
 
         let launchedAtLogin = NSAppleEventManager.shared().currentAppleEvent?
             .paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
@@ -54,63 +42,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) { model.session.stop() }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     @objc private func togglePanel() {
-        let mouseLocation = NSEvent.mouseLocation
         if NSApp.currentEvent?.type == .rightMouseUp {
             model.toggle()
-        } else if popover.isShown,
-                  presentedScreen == NSScreen.screens.first(where: { $0.frame.contains(mouseLocation) })?.frame {
-            popover.performClose(nil)
-        } else {
-            showPanel(at: mouseLocation)
+            return
         }
-    }
-
-    private func showPanel(at mouseLocation: NSPoint = NSEvent.mouseLocation) {
-        guard let button = statusItem?.button, let buttonWindow = button.window else { return }
-        // Capture the display before activation can change the active window/Space.
-        let screens = NSScreen.screens
-        let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        guard let placement = MenuBarAnchor.resolve(mouseLocation: mouseLocation,
-                                                    buttonFrame: buttonFrame,
-                                                    screens: screens.map(\.frame)) else { return }
-        if popover.isShown { popover.close() }
+        let location = NSEvent.mouseLocation
+        guard let buttonFrame else { return }
         model.refreshSettings()
-
-        let positioningView: NSView
-        if placement.usesStatusButton {
-            positioningView = button
-        } else {
-            let anchor = NSWindow(contentRect: placement.rect, styleMask: .borderless,
-                                  backing: .buffered, defer: false)
-            anchor.isReleasedWhenClosed = false
-            anchor.isOpaque = false
-            anchor.backgroundColor = .clear
-            anchor.hasShadow = false
-            anchor.ignoresMouseEvents = true
-            anchor.level = .statusBar
-            anchor.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary, .transient, .ignoresCycle]
-            let view = NSView(frame: NSRect(origin: .zero, size: placement.rect.size))
-            anchor.contentView = view
-            anchor.orderFrontRegardless()
-            anchorWindow = anchor
-            positioningView = view
-        }
-        popover.show(relativeTo: positioningView.bounds, of: positioningView, preferredEdge: .minY)
-        guard popover.isShown else { clearAnchor(); return }
-        presentedScreen = screens[placement.screenIndex].frame
-        // Focus only after the popover has a visible anchor on the intended screen.
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        popover.contentViewController?.view.window?.makeKey()
+        panel?.toggle(at: location, buttonFrame: buttonFrame)
     }
 
-    func popoverDidClose(_ notification: Notification) { clearAnchor() }
+    private func showPanel() {
+        let location = NSEvent.mouseLocation
+        guard let buttonFrame else { return }
+        model.refreshSettings()
+        panel?.show(at: location, buttonFrame: buttonFrame)
+    }
 
-    private func clearAnchor() {
-        anchorWindow?.orderOut(nil)
-        anchorWindow = nil
-        presentedScreen = nil
+    private var buttonFrame: NSRect? {
+        guard let button = statusItem?.button, let window = button.window else { return nil }
+        return window.convertToScreen(button.convert(button.bounds, to: nil))
     }
 
     private func updateStatusItem() {

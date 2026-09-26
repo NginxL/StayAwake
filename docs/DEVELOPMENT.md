@@ -43,6 +43,14 @@ bash scripts/test.sh --integration
 
 These checks briefly create **real sleep-prevention assertions** and inspect them with `pmset -g assertions`. They verify display control, timeout and stop behavior, and assertion release after force-terminating a dedicated test process. They do not force-quit the installed app.
 
+Build the optional display-check application:
+
+```bash
+bash scripts/build-ui-checks.sh
+```
+
+Open `.build/PanelChecks.app` in Finder and click **Run display checks** in an unlocked desktop session. This briefly opens and resizes panels on every connected display, checks WindowServer registration, display bounds, active Space, repeated toggles, and display-change cleanup. It saves a timestamped report to `.build/PanelChecks-results.json`. Close the test application when finished. These checks require a real GUI session and are separate from headless CI; they do not toggle the installed app's sleep-prevention session.
+
 Before a release, also verify the actual panel, menu bar interaction, Dock entry, login-item setting, and update flow. The core test runner does not automate those UI and installation paths.
 
 For multiple displays, open the panel from each menu bar, then switch displays while it is open. Verify that it follows the clicked icon, closes when clicked again on the same display, and remains usable after rearranging or disconnecting a display. Include displays with different scaling and vertical arrangements.
@@ -52,8 +60,10 @@ For multiple displays, open the panel from each menu bar, then switch displays w
 | Component | Responsibility |
 | --- | --- |
 | `Sources/AwakeCore/` | Session state, deadlines, time formatting, version comparison, and the `caffeinate` driver |
+| `Sources/AwakeUI/` | Screen-specific panel creation, sizing, focus, and dismissal |
 | `Sources/StayAwake/` | SwiftUI panel, AppKit menu bar and Dock behavior, saved preferences, login items, and updates |
-| `Tests/AwakeCoreTests/` | Standalone core checks and optional integration checks |
+| `Tests/AwakeCoreTests/` | Standalone core checks and optional power-assertion integration checks |
+| `Tests/AwakeUITests/` | Interactive application for real display and panel-lifecycle checks |
 | `Resources/` | App metadata and the update-installation helper |
 | `scripts/` | Build, test, package, and icon-generation scripts |
 | `.github/workflows/` | CI builds and tagged releases |
@@ -71,7 +81,7 @@ For multiple displays, open the panel from each menu bar, then switch displays w
 
 The app does not modify `pmset` configuration, override explicit sleep commands, or guarantee operation with a closed laptop lid.
 
-`MenuBarAnchor` selects a display from the pointer position captured before application activation. The panel uses the status button when its window is on that display; otherwise, a temporary transparent window anchors the mirrored menu bar click to the correct screen. Closing the panel releases that window. Changes to display configuration close the panel so the next click uses fresh geometry. All placement calculations use screen points, including negative display origins.
+`MenuBarAnchor` selects a display from the pointer position captured before application activation. `MenuBarPanelController` creates the real panel on that display and positions it within the visible screen bounds. All menu bar copies and the Dock use this path. The SwiftUI controller is retained when the panel is recreated; size changes are applied after the layout pass. Outside clicks, Escape, application changes, and display or Space changes dismiss the panel. Dismissing or recreating the panel does not stop sleep prevention. All placement calculations use screen points, including negative display origins.
 
 ## Update implementation
 
