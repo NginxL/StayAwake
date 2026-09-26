@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 import AwakeCore
 import Darwin
 
@@ -45,7 +46,12 @@ struct SessionControllerTests {
         tests.testUnsafeTimeoutsAndInvalidOwnerAreRejected()
         tests.testTimeFormattingAndProgressAtBoundaries()
         tests.testSemanticVersionComparison()
-        var scenarioCount = 13
+        tests.testMenuBarAnchorUsesClickedDisplayInsteadOfStaleButtonWindow()
+        tests.testMenuBarAnchorHandlesNegativeAndVerticalScreenOrigins()
+        tests.testMenuBarAnchorKeepsNativeButtonOnItsOwnDisplay()
+        tests.testDockAnchorStaysWithinTheSelectedDisplay()
+        tests.testMenuBarAnchorHandlesMissingDisplays()
+        var scenarioCount = 18
         if CommandLine.arguments.contains("--integration") {
             try tests.testRealSystemAssertionsAndTimeout()
             try tests.testForcedOwnerExitReleasesAssertions()
@@ -243,6 +249,71 @@ struct SessionControllerTests {
         for invalid in ["1.0", "1.0.0-beta", "-1.0.0", "1..0", "../1.0.0", "v1.0.0; open /", "1.0.0.0"] {
             expectNil(AppVersion(invalid))
         }
+    }
+
+    func testMenuBarAnchorUsesClickedDisplayInsteadOfStaleButtonWindow() {
+        let screens = [CGRect(x: 0, y: 0, width: 1728, height: 1117),
+                       CGRect(x: 1728, y: 0, width: 2560, height: 1440)]
+        let button = CGRect(x: 1300, y: 1080, width: 36, height: 37)
+        let location = CGPoint(x: 3900, y: 1425)
+        let anchor = MenuBarAnchor.resolve(mouseLocation: location, buttonFrame: button, screens: screens)!
+        expectEqual(anchor.screenIndex, 1)
+        expectFalse(anchor.usesStatusButton)
+        expectEqual(anchor.rect.midX, location.x)
+        expectEqual(anchor.rect.maxY, screens[1].maxY)
+        expectTrue(screens[1].contains(anchor.rect))
+    }
+
+    func testMenuBarAnchorHandlesNegativeAndVerticalScreenOrigins() {
+        let primary = CGRect(x: 0, y: 0, width: 1728, height: 1117)
+        let button = CGRect(x: 1300, y: 1080, width: 36, height: 37)
+        for display in [CGRect(x: -2560, y: -200, width: 2560, height: 1440),
+                        CGRect(x: 100, y: 1117, width: 2560, height: 1440),
+                        CGRect(x: -200, y: -1440, width: 2560, height: 1440)] {
+            let location = CGPoint(x: display.midX, y: display.maxY - 10)
+            let anchor = MenuBarAnchor.resolve(mouseLocation: location, buttonFrame: button,
+                                               screens: [primary, display])!
+            expectEqual(anchor.screenIndex, 1)
+            expectEqual(anchor.rect.midX, location.x)
+            expectTrue(display.contains(anchor.rect))
+        }
+    }
+
+    func testMenuBarAnchorKeepsNativeButtonOnItsOwnDisplay() {
+        let primary = CGRect(x: 0, y: 0, width: 1728, height: 1117)
+        let external = CGRect(x: -2560, y: 0, width: 2560, height: 1440)
+        let button = CGRect(x: -500, y: 1416, width: 70, height: 24)
+        let anchor = MenuBarAnchor.resolve(mouseLocation: CGPoint(x: -480, y: 1428),
+                                           buttonFrame: button, screens: [primary, external])!
+        expectEqual(anchor.screenIndex, 1)
+        expectTrue(anchor.usesStatusButton)
+        expectEqual(anchor.rect, button)
+    }
+
+    func testDockAnchorStaysWithinTheSelectedDisplay() {
+        let primary = CGRect(x: 0, y: 0, width: 1728, height: 1117)
+        let external = CGRect(x: 1728, y: 0, width: 2560, height: 1440)
+        let button = CGRect(x: 1300, y: 1080, width: 36, height: 37)
+        let anchor = MenuBarAnchor.resolve(mouseLocation: CGPoint(x: 2500, y: 20),
+                                           buttonFrame: button, screens: [primary, external])!
+        expectEqual(anchor.screenIndex, 1)
+        expectEqual(external.maxX - anchor.rect.midX, primary.maxX - button.midX)
+        for x in [external.minX, external.maxX - 1] {
+            let edge = MenuBarAnchor.resolve(mouseLocation: CGPoint(x: x, y: external.maxY - 1),
+                                             buttonFrame: button, screens: [primary, external])!
+            expectTrue(external.contains(edge.rect))
+        }
+    }
+
+    func testMenuBarAnchorHandlesMissingDisplays() {
+        let screen = CGRect(x: 0, y: 0, width: 1728, height: 1117)
+        let button = CGRect(x: 1300, y: 1080, width: 36, height: 37)
+        let absentLocation = CGPoint(x: -500, y: 1400)
+        let anchor = MenuBarAnchor.resolve(mouseLocation: absentLocation, buttonFrame: button,
+                                           screens: [screen])!
+        expectEqual(anchor.rect, button)
+        expectTrue(anchor.usesStatusButton)
+        expectNil(MenuBarAnchor.resolve(mouseLocation: absentLocation, buttonFrame: button, screens: []))
     }
 
     private func eventually(_ condition: () throws -> Bool) rethrows -> Bool {

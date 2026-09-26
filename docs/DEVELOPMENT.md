@@ -33,7 +33,7 @@ Builds use an **ad-hoc signature by default** and are **not notarized**. Setting
 bash scripts/test.sh
 ```
 
-Tests run through the `AwakeChecks` executable, using an injected clock and fake process driver. Use this script rather than `swift test`: the package does not define an XCTest test target. Core checks cover session expiry, duration changes, display-mode changes, failed starts, unexpected process exit, time formatting, and version comparison.
+Tests run through the `AwakeChecks` executable, using an injected clock and fake process driver. Use this script rather than `swift test`: the package does not define an XCTest test target. Core checks cover session expiry, duration changes, display-mode changes, failed starts, unexpected process exit, time formatting, version comparison, and menu bar anchor selection across displays.
 
 Optional macOS integration checks:
 
@@ -44,6 +44,8 @@ bash scripts/test.sh --integration
 These checks briefly create **real sleep-prevention assertions** and inspect them with `pmset -g assertions`. They verify display control, timeout and stop behavior, and assertion release after force-terminating a dedicated test process. They do not force-quit the installed app.
 
 Before a release, also verify the actual panel, menu bar interaction, Dock entry, login-item setting, and update flow. The core test runner does not automate those UI and installation paths.
+
+For multiple displays, open the panel from each menu bar, then switch displays while it is open. Verify that it follows the clicked icon, closes when clicked again on the same display, and remains usable after rearranging or disconnecting a display. Include displays with different scaling and vertical arrangements.
 
 ## Implementation
 
@@ -68,6 +70,8 @@ Before a release, also verify the actual panel, menu bar interaction, Dock entry
 `SessionController` tracks the deadline and refreshes it after the Mac wakes. Changing the duration starts a new countdown; changing display mode preserves the current deadline. The driver starts a replacement process before terminating the previous one, so a failed launch can leave the existing session intact. The app always starts with sleep prevention disabled.
 
 The app does not modify `pmset` configuration, override explicit sleep commands, or guarantee operation with a closed laptop lid.
+
+`MenuBarAnchor` selects a display from the pointer position captured before application activation. The panel uses the status button when its window is on that display; otherwise, a temporary transparent window anchors the mirrored menu bar click to the correct screen. Closing the panel releases that window. Changes to display configuration close the panel so the next click uses fresh geometry. All placement calculations use screen points, including negative display origins.
 
 ## Update implementation
 
