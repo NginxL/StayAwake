@@ -19,7 +19,7 @@ private final class SizingHostingController: NSHostingController<AnyView> {
 }
 
 /// A single, directly positioned window for every menu-bar copy and the Dock.
-/// Placement is applied to the real window after activation, without a popover anchor.
+/// Placement is applied without activating the app or leaving a full-screen Space.
 @MainActor
 public final class MenuBarPanelController {
     private var panel: MenuBarPanel?
@@ -97,7 +97,7 @@ public final class MenuBarPanelController {
         let initialSize = content.preferredContentSize.width > 0 ? content.preferredContentSize : content.view.fittingSize
         let initialFrame = placement.panelFrame(contentSize: initialSize, visibleFrame: screen.visibleFrame)
         let localFrame = initialFrame.offsetBy(dx: -screen.frame.minX, dy: -screen.frame.minY)
-        let window = MenuBarPanel(contentRect: localFrame, styleMask: [.borderless],
+        let window = MenuBarPanel(contentRect: localFrame, styleMask: [.borderless, .nonactivatingPanel],
                                   backing: .buffered, defer: false, screen: screen)
         window.isReleasedWhenClosed = false
         window.isOpaque = false
@@ -119,7 +119,8 @@ public final class MenuBarPanelController {
         screenFrame = screen.frame
         visibleFrame = screen.visibleFrame
         openedAt = ProcessInfo.processInfo.systemUptime
-        NSApplication.shared.activate(ignoringOtherApps: true)
+        // Activating our regular Dock app can move focus to its desktop Space.
+        // A nonactivating panel can become key while the full-screen app stays active.
         content.view.layoutSubtreeIfNeeded()
         let preferred = content.preferredContentSize
         resize(to: preferred.width > 0 && preferred.height > 0 ? preferred : content.view.fittingSize)

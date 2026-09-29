@@ -51,6 +51,8 @@ bash scripts/build-ui-checks.sh
 
 Open `.build/PanelChecks.app` in Finder and click **Run display checks** in an unlocked desktop session. This briefly opens and resizes panels on every connected display, checks WindowServer registration, display bounds, active Space, repeated toggles, and display-change cleanup. It saves a timestamped report to `.build/PanelChecks-results.json`. Close the test application when finished. These checks require a real GUI session and are separate from headless CI; they do not toggle the installed app's sleep-prevention session.
 
+The suite also launches a separate fixture application in a real full-screen Space, then returns it to a normal window. It verifies panel visibility, foreground application preservation, keyboard focus, repeated clicks and Escape in both modes. The fixture closes automatically. To run and exit without clicking the test window, use `open -n .build/PanelChecks.app --args --run` and inspect the report's timestamp and failure count.
+
 Before a release, also verify the actual panel, menu bar interaction, Dock entry, login-item setting, and update flow. The core test runner does not automate those UI and installation paths.
 
 For multiple displays, open the panel from each menu bar, then switch displays while it is open. Verify that it follows the clicked icon, closes when clicked again on the same display, and remains usable after rearranging or disconnecting a display. Include displays with different scaling and vertical arrangements.
@@ -81,7 +83,7 @@ For multiple displays, open the panel from each menu bar, then switch displays w
 
 The app does not modify `pmset` configuration, override explicit sleep commands, or guarantee operation with a closed laptop lid.
 
-`MenuBarAnchor` selects a display from the pointer position captured before application activation. `MenuBarPanelController` creates the real panel on that display and positions it within the visible screen bounds. All menu bar copies and the Dock use this path. The SwiftUI controller is retained when the panel is recreated; size changes are applied after the layout pass. Outside clicks, Escape, application changes, and display or Space changes dismiss the panel. Dismissing or recreating the panel does not stop sleep prevention. All placement calculations use screen points, including negative display origins.
+`MenuBarAnchor` selects a display from the pointer position. `MenuBarPanelController` creates a [nonactivating panel](https://developer.apple.com/documentation/appkit/nswindow/stylemask-swift.struct/nonactivatingpanel) on that display and positions it within the visible screen bounds. Opening it does not activate the main app: the panel can receive keyboard input while the foreground app keeps its full-screen Space. Its collection behavior allows it to join other apps' full-screen windows. All menu bar copies and the Dock use this path. The SwiftUI controller is retained when the panel is recreated; size changes are applied after the layout pass. Outside clicks, Escape, application changes, and display or Space changes dismiss the panel. Dismissing or recreating the panel does not stop sleep prevention. All placement calculations use screen points, including negative display origins.
 
 ## Update implementation
 

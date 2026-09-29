@@ -10,6 +10,7 @@ let package = Package(
         .target(name: "AwakeUI", dependencies: ["AwakeCore"]),
         .executableTarget(name: "StayAwake", dependencies: ["AwakeCore", "AwakeUI"]),
         .executableTarget(name: "AwakeChecks", dependencies: ["AwakeCore"], path: "Tests/AwakeCoreTests"),
-        .executableTarget(name: "PanelChecks", dependencies: ["AwakeUI"], path: "Tests/AwakeUITests")
+        .executableTarget(name: "PanelChecks", dependencies: ["AwakeUI"], path: "Tests/AwakeUITests"),
+        .executableTarget(name: "FullScreenHost", path: "Tests/FullScreenHost")
     ]
 )

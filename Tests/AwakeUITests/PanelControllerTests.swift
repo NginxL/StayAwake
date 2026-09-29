@@ -37,6 +37,7 @@ private final class TestAppDelegate: NSObject, NSApplicationDelegate, NSWindowDe
         window.center()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        if CommandLine.arguments.contains("--run") { runTests(button) }
     }
 
     @objc private func runTests(_ sender: NSButton) {
@@ -44,6 +45,7 @@ private final class TestAppDelegate: NSObject, NSApplicationDelegate, NSWindowDe
         window.orderOut(nil)
         Task { @MainActor in
             await PanelControllerTests.runChecks()
+            if CommandLine.arguments.contains("--run") { NSApp.terminate(nil); return }
             status.stringValue = "\(PanelControllerTests.assertions) assertions, \(PanelControllerTests.failures) failures. Results: .build/PanelChecks-results.json"
             window.makeKeyAndOrderFront(nil)
         }
@@ -154,6 +156,7 @@ struct PanelControllerTests {
         }
         NotificationCenter.default.post(name: NSApplication.didChangeScreenParametersNotification, object: NSApp)
         expect(!controller.isVisible, "display reconfiguration dismisses panel")
+        await checkOtherApplication()
         print("\(screens.count) physical displays, \(assertions) assertions, \(failures) failures")
         let report: [String: Any] = ["completedAt": ISO8601DateFormatter().string(from: Date()),
                                      "displays": screens.map(\.localizedName), "assertions": assertions,
@@ -162,5 +165,79 @@ struct PanelControllerTests {
         do {
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: output, options: .atomic)
         } catch { print("Could not write UI test results: \(error)"); failures += 1 }
+    }
+
+    static func checkOtherApplication() async {
+        let hostURL = Bundle.main.resourceURL!.appendingPathComponent("FullScreenHost.app")
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("StayAwakePanelChecks-\(UUID().uuidString)")
+        let report = directory.appendingPathComponent("host.json")
+        var host: NSRunningApplication?
+        defer {
+            host?.terminate()
+            try? FileManager.default.removeItem(at: directory)
+        }
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let config = NSWorkspace.OpenConfiguration()
+            config.arguments = [report.path]
+            config.activates = true
+            config.createsNewApplicationInstance = true
+            host = try await NSWorkspace.shared.openApplication(at: hostURL, configuration: config)
+        } catch { expect(false, "launch full-screen fixture: \(error)"); return }
+
+        func waitForHost(fullScreen: Bool) async -> Bool {
+            for _ in 0..<40 {
+                await settle()
+                if let data = try? Data(contentsOf: report),
+                   let state = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                   state["fullScreen"] as? Bool == fullScreen { return true }
+            }
+            return false
+        }
+        let entered = await waitForHost(fullScreen: true)
+        expect(entered, "fixture enters a real full-screen Space")
+        guard entered, let screen = NSScreen.main, let host else { return }
+        let model = FixtureModel()
+        let panel = MenuBarPanelController(rootView: FixtureView(model: model))
+        defer { panel.hide() }
+        let location = NSPoint(x: screen.frame.midX, y: screen.frame.maxY - 10)
+        let button = NSRect(x: location.x - 16, y: screen.frame.maxY - 24, width: 32, height: 24)
+
+        for fullScreen in [true, false] {
+            if !fullScreen {
+                panel.hide()
+                host.activate(options: [])
+                DistributedNotificationCenter.default().postNotificationName(
+                    Notification.Name("StayAwakePanelChecks.command"), object: report.path,
+                    userInfo: ["action": "windowed"], deliverImmediately: true)
+                let windowed = await waitForHost(fullScreen: false)
+                expect(windowed, "fixture returns to a normal window")
+            }
+            // Allow delayed Space/activation notifications from the transition to settle.
+            await settle()
+            await settle()
+            panel.show(at: location, buttonFrame: button)
+            await waitForPresentation(panel)
+            for _ in 0..<5 { await settle() }
+            let mode = fullScreen ? "full-screen" : "windowed"
+            let window = NSApp.windows.first { $0.windowNumber == panel.windowNumber }
+            let info = (CGWindowListCopyWindowInfo(.optionIncludingWindow, CGWindowID(panel.windowNumber ?? 0)) as? [[String: Any]])?.first
+            diagnostics.append(["mode": mode, "frontmostPID": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+                                "hostPID": host.processIdentifier, "visible": panel.isVisible,
+                                "onActiveSpace": panel.isOnActiveSpace,
+                                "onScreen": info?[kCGWindowIsOnscreen as String] as? Bool ?? false])
+            expect(panel.isVisible && panel.isOnActiveSpace, "panel stays visible over another \(mode) application")
+            expect(info?[kCGWindowIsOnscreen as String] as? Bool == true, "panel appears in WindowServer over \(mode) application")
+            expect(NSWorkspace.shared.frontmostApplication?.processIdentifier == host.processIdentifier,
+                   "opening panel preserves the \(mode) foreground application")
+            expect(window?.isKeyWindow == true, "\(mode) panel can receive keyboard input")
+            panel.toggle(at: location, buttonFrame: button)
+            expect(!panel.isVisible, "\(mode) second click closes panel")
+            panel.toggle(at: location, buttonFrame: button)
+            await waitForPresentation(panel)
+            expect(panel.isVisible && panel.isOnActiveSpace, "\(mode) panel reopens")
+            NSApp.windows.first { $0.windowNumber == panel.windowNumber }?.cancelOperation(nil)
+            expect(!panel.isVisible, "\(mode) Escape closes panel")
+        }
     }
 }

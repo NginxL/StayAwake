@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 swift build --product PanelChecks
+swift build --product FullScreenHost
 bin_dir=$(swift build --show-bin-path)
 app_dir="$PWD/.build/PanelChecks.app"
 mkdir -p "$app_dir/Contents/MacOS"
@@ -18,5 +19,21 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
   <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>
 PLIST
+host_dir="$app_dir/Contents/Resources/FullScreenHost.app"
+mkdir -p "$host_dir/Contents/MacOS"
+cp "$bin_dir/FullScreenHost" "$host_dir/Contents/MacOS/FullScreenHost"
+cat > "$host_dir/Contents/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleIdentifier</key><string>io.github.nginxl.StayAwake.FullScreenHost</string>
+  <key>CFBundleExecutable</key><string>FullScreenHost</string>
+  <key>CFBundleName</key><string>StayAwake Full-Screen Fixture</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>NSPrincipalClass</key><string>NSApplication</string>
+</dict></plist>
+PLIST
+codesign --force --sign - "$host_dir"
 codesign --force --sign - "$app_dir"
 printf 'Launch %s in an unlocked desktop session.\nResults: .build/PanelChecks-results.json\n' "$app_dir"
